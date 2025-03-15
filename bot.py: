@@ -1,0 +1,54 @@
+import requests
+import time
+import json
+import telegram
+from telegram.ext import Updater, CommandHandler
+import logging
+
+# Telegram Bot Token (Replace with your actual token)
+TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
+CHAT_ID = "YOUR_TELEGRAM_CHAT_ID"  # Replace with your chat ID
+
+# Initialize Telegram bot
+bot = telegram.Bot(token=TELEGRAM_BOT_TOKEN)
+
+# Logging setup
+logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
+
+# Function to scrape crash data (Replace with actual API or scraping method)
+def get_crash_data():
+    try:
+        response = requests.get("https://api.bcgame.io/crash-history")  # Replace with actual API endpoint
+        data = response.json()
+        return data['history']  # Adjust based on actual API response
+    except Exception as e:
+        logging.error(f"Error fetching crash data: {e}")
+        return None
+
+# Simple prediction model (Replace with AI model later)
+def predict_next_multiplier(history):
+    if not history:
+        return None
+    avg_multiplier = sum(history[-10:]) / len(history[-10:])  # Simple average of last 10 rounds
+    return round(avg_multiplier * 1.05, 2)  # Slight adjustment for prediction
+
+# Function to send Telegram alert
+def send_telegram_message(message):
+    try:
+        bot.send_message(chat_id=CHAT_ID, text=message)
+    except Exception as e:
+        logging.error(f"Error sending Telegram message: {e}")
+
+# Main loop
+def main():
+    while True:
+        crash_data = get_crash_data()
+        if crash_data:
+            predicted_multiplier = predict_next_multiplier([x['multiplier'] for x in crash_data])
+            if predicted_multiplier:
+                message = f"🔮 Predicted Next Multiplier: ~{predicted_multiplier}x"
+                send_telegram_message(message)
+        time.sleep(10)  # Adjust frequency as needed
+
+if __name__ == "__main__":
+    main()
